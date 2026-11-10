@@ -28,3 +28,5 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+# Agent rules
+- Store catalog, billionaire data and price math live in src/lib/market.ts (local data, pure functions) so all prices stay consistent and testable.
