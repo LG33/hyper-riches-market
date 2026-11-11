@@ -38,7 +38,7 @@ export async function renderTicketPng(d: TicketData): Promise<Blob> {
   }
 
   g.fillStyle = ink; g.textAlign = "center"; g.font = "500 30px Manrope, sans-serif";
-  let y = centeredWrap(`Si, avec ${formatEuro(d.householdIncome)} de revenus annuels bruts, j'avais un pouvoir d'achat équivalent à ${d.billName}…`, 315);
+  let y = centeredWrap(`Si, avec ${formatEuro(d.householdIncome)} de revenus annuels, j'avais un pouvoir d'achat équivalent à ${d.billName}…`, 315);
   g.font = "400 24px Manrope, sans-serif"; g.fillStyle = mutedInk;
   y = centeredWrap(`Tous mes prix seraient divisés par ${Math.round(d.divisor).toLocaleString("fr-FR")}.`, y + 5, 820, 36);
 
@@ -69,7 +69,7 @@ export async function renderTicketPng(d: TicketData): Promise<Blob> {
   g.fillText(`${d.billName} · ${formatDuration(d.billDays)} de revenus`, 110, y);
 
   g.fillStyle = mutedInk; g.textAlign = "center"; g.font = "400 21px Manrope, sans-serif";
-  centeredWrap(`Base ${WORKING_DAYS} jours/an, 7 h/jour. Jours équivalents de revenus, pas de travail effectif. Simulation de revenus bruts.`, H - 145, 820, 32);
+  centeredWrap(`Base ${WORKING_DAYS} jours/an, 7 h/jour. Jours équivalents de revenus, pas de travail effectif. Comparaison illustrative de flux annuels.`, H - 145, 820, 32);
   return new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error("Image export failed")), "image/png"));
 }
 
