@@ -1,9 +1,9 @@
-import { formatEuro, formatDuration, WORKING_DAYS } from "./market";
+import { formatEuro, formatBig } from "./market";
 import logoUrl from "@/assets/logo-hyper-riches-market.png";
 
 export type TicketData = {
   lines: { name: string; qty: number; real: number; sim: number }[];
-  totalReal: number; totalSim: number; userDays: number; billDays: number; billName: string; billIncome: number; billPerimeter: string; householdIncome: number; divisor: number;
+  totalReal: number; totalSim: number; billName: string; billIncome: number; householdIncome: number; divisor: number;
 };
 
 export async function renderTicketPng(d: TicketData): Promise<Blob> {
@@ -38,13 +38,9 @@ export async function renderTicketPng(d: TicketData): Promise<Blob> {
   }
 
   g.fillStyle = ink; g.textAlign = "center"; g.font = "500 30px Manrope, sans-serif";
-  let y = centeredWrap(`Si, avec ${formatEuro(d.householdIncome)} de revenus annuels, j'avais le pouvoir d'achat de ${d.billName.replace(/^Famille /, "la famille ")}…`, 315);
-  g.font = "400 24px Manrope, sans-serif"; g.fillStyle = mutedInk;
-  y = centeredWrap(`Tous mes prix seraient divisés par ${Math.round(d.divisor).toLocaleString("fr-FR")}.`, y + 5, 820, 36);
-  g.fillStyle = ink; g.font = "700 25px Manrope, sans-serif";
-  y = centeredWrap(`Référence annuelle : ${formatEuro(d.billIncome)} de dividendes familiaux bruts`, y + 14, 820, 36);
-  g.fillStyle = mutedInk; g.font = "400 19px Manrope, sans-serif";
-  y = centeredWrap(d.billPerimeter, y, 820, 28);
+  let y = centeredWrap(`Et si tes revenus actuels (${formatEuro(d.householdIncome)} / an) te donnaient le pouvoir d'achat de ${d.billName.replace(/^Famille /, "la famille ")} (${formatBig(d.billIncome)} / an) ?`, 315);
+  g.font = "700 27px Manrope, sans-serif"; g.fillStyle = sale;
+  y = centeredWrap(`Tous les prix seraient divisés par ${Math.round(d.divisor).toLocaleString("fr-FR")} !`, y + 8, 820, 40);
 
   const divider = () => { g.strokeStyle = ink; g.setLineDash([8, 8]); g.beginPath(); g.moveTo(110, y); g.lineTo(W - 110, y); g.stroke(); g.setLineDash([]); y += 55; };
   y += 15; divider();
@@ -66,14 +62,8 @@ export async function renderTicketPng(d: TicketData): Promise<Blob> {
   g.font = "700 40px 'JetBrains Mono', monospace"; g.fillStyle = sale; g.textAlign = "left";
   g.fillText("À PAYER", 110, y); g.textAlign = "right"; g.fillText(formatEuro(d.totalSim), W - 110, y); y += 85;
 
-  g.fillStyle = ink; g.textAlign = "left"; g.font = "700 27px Manrope, sans-serif";
-  g.fillText("Ce panier représente, au prix réel :", 110, y); y += 48;
-  g.font = "400 25px 'JetBrains Mono', monospace";
-  g.fillText(`Vous · ${formatDuration(d.userDays)} de revenus`, 110, y); y += 45;
-  g.fillText(`${d.billName} · ${formatDuration(d.billDays)} de revenus`, 110, y);
-
   g.fillStyle = mutedInk; g.textAlign = "center"; g.font = "400 21px Manrope, sans-serif";
-  centeredWrap(`Base ${WORKING_DAYS} jours/an, 7 h/jour. Jours équivalents de revenus, pas de travail effectif. Comparaison illustrative de flux annuels.`, H - 145, 820, 32);
+  centeredWrap("Sources et méthode : hyper-riches-market.lovable.app", H - 145, 820, 32);
   return new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error("Image export failed")), "image/png"));
 }
 
