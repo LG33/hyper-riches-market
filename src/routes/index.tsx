@@ -163,6 +163,13 @@ function Market() {
           {!lines.length && <p className="text-center py-8">Votre ticket est encore vide.</p>}
           {lines.map(({ p, qty }) => <div key={p.id} className="py-4 border-b border-dashed"><div className="flex justify-between gap-3"><span className="font-bold">{p.name}</span><span className="text-sale shrink-0 font-bold">{formatEuro(sim(p.price) * qty)}</span></div><div className="text-xs text-muted-foreground mt-1">Prix réel : <s>{formatEuro(p.price * qty)}</s></div><div className="flex items-center gap-3 mt-2"><Button variant="outline" size="icon" onClick={() => add(p.id, -1)} aria-label={`Retirer un ${p.name}`}><Minus /></Button><span>{qty}</span><Button variant="outline" size="icon" onClick={() => add(p.id)} aria-label={`Ajouter un ${p.name}`}><Plus /></Button><Button variant="ghost" size="icon" className="ml-auto" onClick={() => add(p.id, -qty)} aria-label={`Supprimer ${p.name}`}><Trash2 /></Button></div></div>)}
           {!!lines.length && <><div className="flex justify-between mt-5"><span>Prix réel</span><s>{formatEuro(totalReal)}</s></div><div className="flex justify-between text-xl text-sale font-bold mt-2"><span>À PAYER</span><span>{formatEuro(sim(totalReal))}</span></div><Button onClick={share} disabled={sharing} className="w-full mt-5 font-sans"><Download />{sharing ? "Création de l'image…" : "Partager mon ticket"}</Button>{shareError && <p role="alert" className="text-destructive mt-2">{shareError}</p>}</>}
+          <div className="border-t border-dashed pt-4 mt-5 space-y-2 font-sans">
+            <p className="font-bold">Ce panier représente, au prix réel :</p>
+            <p>Vous · {formatDuration(userDays)} de revenus</p>
+            <p>{bill?.name} · {formatDuration(billDays)} de revenus</p>
+            <p className="text-[11px] text-muted-foreground">Équivalent jours travaillés, sur une base de {WORKING_DAYS} jours/an et 7 h/jour. Pour les familles, il s'agit d'un équivalent calculé à partir des dividendes, pas de jours effectivement travaillés.</p>
+          </div>
+          <Button variant="link" className="w-full mt-3 font-sans" onClick={() => setModal("method")}>Sources et méthode<ArrowRight /></Button>
         </div>}
         </div>
       </DialogContent>
