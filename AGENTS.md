@@ -30,3 +30,5 @@ use the editor.
 <!-- LOVABLE:END -->
 # Agent rules
 - Store catalog, billionaire data and price math live in src/lib/market.ts (local data, pure functions) so all prices stay consistent and testable.
+- Choose the initial billionaire after hydration only when no valid saved profile exists, to keep SSR stable and preserve an active shopping session.
+- Read receipt image colors from semantic CSS tokens and share the current household income with the image renderer, to keep exported tickets consistent with the shop.

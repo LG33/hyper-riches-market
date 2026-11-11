@@ -2,6 +2,7 @@ import yacht from "@/assets/yacht.jpg";
 import jet from "@/assets/jet.jpg";
 import watch from "@/assets/watch.jpg";
 import baguette from "@/assets/baguette.jpg";
+import sportsCar from "@/assets/sports-car.jpg";
 
 export const WORKING_DAYS = 220;
 export const DEFAULT_INCOME = 58000;
@@ -62,7 +63,7 @@ export const PRODUCTS: Product[] = [
   { id: "palace", name: "Week-end au palace", desc: "Suite vue mer, majordome attitré.", price: 17000, category: "abordable", emoji: "🛎️" },
   { id: "montre", name: "Montre de prestige", desc: "Or 18 carats, mouvement automatique.", price: 30000, category: "abordable", img: watch, emoji: "⌚" },
   { id: "diamant", name: "Collier de diamants", desc: "Pour briller même à l'ombre.", price: 48000, category: "abordable", emoji: "💎" },
-  { id: "sportive", name: "Voiture de sport", desc: "0 à 100 km/h avant la fin de la phrase.", price: 110000, category: "abordable", emoji: "🏎️" },
+  { id: "sportive", name: "Voiture de sport", desc: "0 à 100 km/h avant la fin de la phrase.", price: 110000, category: "abordable", img: sportsCar, emoji: "🏎️" },
   { id: "hypercar", name: "Hypercar italienne", desc: "Série limitée, 800 chevaux.", price: 450000, category: "abordable", emoji: "🚗" },
   { id: "art", name: "Œuvre d'art contemporain", desc: "Le salon a enfin du caractère.", price: 1_200_000, category: "abordable", emoji: "🖼️" },
   { id: "villa", name: "Villa sur la Côte", desc: "Piscine à débordement, pins centenaires.", price: 4_500_000, category: "abordable", emoji: "🏡" },
@@ -78,6 +79,18 @@ export const coefficient = (billionaireIncome: number, householdIncome: number) 
   householdIncome > 0 ? billionaireIncome / householdIncome : 0;
 
 export const simulatedPrice = (price: number, coef: number) => (coef > 0 ? price / coef : price);
+
+export const discountPercentage = (coef: number) => coef > 0 ? (1 - 1 / coef) * 100 : 0;
+
+export function randomBillionaire(random: () => number = Math.random): Billionaire {
+  const selected = BILLIONAIRES[Math.floor(random() * BILLIONAIRES.length)] ?? BILLIONAIRES[0];
+  if (!selected) throw new Error("No billionaire profiles available");
+  return selected;
+}
+
+// Truncate rather than round: a discount below 100% must never read as free.
+export const formatDiscount = (coef: number) =>
+  `${(Math.trunc(discountPercentage(coef) * 100) / 100).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`;
 
 export const isTwoEuro = (price: number, coef: number) => {
   const s = simulatedPrice(price, coef);

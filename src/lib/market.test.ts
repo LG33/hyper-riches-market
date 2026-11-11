@@ -1,7 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { coefficient, simulatedPrice, isTwoEuro, daysOfIncome } from "./market";
+import { coefficient, simulatedPrice, isTwoEuro, daysOfIncome, discountPercentage, randomBillionaire, BILLIONAIRES } from "./market";
 
 describe("market rules", () => {
+  it("discount follows the selected income ratio", () => {
+    expect(discountPercentage(coefficient(3.2e9, 58000))).toBeCloseTo(99.9981875, 7);
+  });
+  it("random selection can select every billionaire", () => {
+    BILLIONAIRES.forEach((b, i) => expect(randomBillionaire(() => (i + 0.5) / 5).id).toBe(b.id));
+  });
   it("coefficient = revenus milliardaire / revenus foyer", () => {
     expect(Math.round(coefficient(3.2e9, 58000))).toBe(55172);
   });

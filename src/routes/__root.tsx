@@ -81,9 +81,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Ultra Riche Market — Consommez comme un milliardaire" },
+      { title: "Hyper Riches Market — Consommez comme un milliardaire" },
       { name: "description", content: "Le supermarché où les prix sont divisés par l'écart de revenus avec un milliardaire." },
-            { property: "og:title", content: "Ultra Riche Market" },
+            { property: "og:title", content: "Hyper Riches Market" },
       { property: "og:description", content: "Consommez comme un milliardaire." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
