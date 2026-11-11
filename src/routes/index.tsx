@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Check, Minus, Pencil, Plus, Search, ShoppingBag, Trash2, Download, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { BILLIONAIRES, PRODUCTS, CATEGORIES, DEFAULT_INCOME, HOUSEHOLD_REFERENCE, WORKING_DAYS, coefficient, simulatedPrice, isTwoEuro, daysOfIncome, formatEuro, formatBig, formatDuration, formatDiscount, randomBillionaire, type Product, type Category } from "@/lib/market";
+import { BILLIONAIRES, PRODUCTS, CATEGORIES, DEFAULT_INCOME, HOUSEHOLD_REFERENCE, WORKING_DAYS, coefficient, simulatedPrice, isTwoEuro, formatEuro, formatBig, formatDiscount, randomBillionaire, type Product, type Category } from "@/lib/market";
 import { shareTicket } from "@/lib/share-ticket";
 import logoHyperRichesMarket from "@/assets/logo-hyper-riches-market.png";
 
@@ -133,7 +133,7 @@ function Market() {
         {modal === "method" && <div className="text-sm space-y-5">
           <div className="bg-muted p-4 rounded-md">
             <p className="font-bold">Prix simulé = prix réel × revenus du foyer ÷ revenus annuels de référence</p>
-            <p className="mt-2">Le coefficient est calculé à partir des montants du CSV. Les prix sont divisés par ce coefficient ; le rayon « Tout à 2 € » sélectionne les produits dont le prix simulé est compris entre 1,50 € et 2,50 €.</p>
+            <p className="mt-2">Le coefficient est calculé à partir des revenus annuels du foyer et des dividendes annuels de la famille sélectionnée. Les prix sont divisés par ce coefficient ; le rayon « Tout à 2 € » sélectionne les produits dont le prix simulé est compris entre 1,50 € et 2,50 €.</p>
           </div>
           <section className="space-y-2">
             <h3 className="font-bold">Périmètre et comparabilité</h3>
@@ -158,6 +158,7 @@ function Market() {
           </div>)}
         </div>}
         {modal === "cart" && <div className="font-mono text-sm"><div className="text-center border-b border-dashed pb-5"><img src={logoHyperRichesMarket} alt="hyper riches market." loading="lazy" width={1507} height={541} className="mx-auto h-16 w-auto" /><p className="mt-3 leading-relaxed">Et si tes revenus actuels te donnaient le pouvoir d'achat de {bill?.name?.replace(/^Famille /, "la famille ")} ({formatBig(bill?.income ?? 0)} / an) ?</p><p className="text-xs font-bold text-sale mt-3">Tous les prix seraient divisés par {Math.round(coef).toLocaleString("fr-FR")} !</p></div>
+          <Button variant="link" className="w-full mt-4 font-sans" onClick={() => setModal("method")}>Sources et méthode<ArrowRight /></Button>
           {!lines.length && <p className="text-center py-8">Votre ticket est encore vide.</p>}
           {lines.map(({ p, qty }) => <div key={p.id} className="py-4 border-b border-dashed"><div className="flex justify-between gap-3"><span className="font-bold">{p.name}</span><span className="text-sale shrink-0 font-bold">{formatEuro(sim(p.price) * qty)}</span></div><div className="text-xs text-muted-foreground mt-1">Prix réel : <s>{formatEuro(p.price * qty)}</s></div><div className="flex items-center gap-3 mt-2"><Button variant="outline" size="icon" onClick={() => add(p.id, -1)} aria-label={`Retirer un ${p.name}`}><Minus /></Button><span>{qty}</span><Button variant="outline" size="icon" onClick={() => add(p.id)} aria-label={`Ajouter un ${p.name}`}><Plus /></Button><Button variant="ghost" size="icon" className="ml-auto" onClick={() => add(p.id, -qty)} aria-label={`Supprimer ${p.name}`}><Trash2 /></Button></div></div>)}
           {!!lines.length && <><div className="flex justify-between mt-5"><span>Prix réel</span><s>{formatEuro(totalReal)}</s></div><div className="flex justify-between text-xl text-sale font-bold mt-2"><span>À PAYER</span><span>{formatEuro(sim(totalReal))}</span></div><Button variant="link" className="w-full mt-4 font-sans" onClick={() => setModal("method")}>Sources et méthode<ArrowRight /></Button><Button onClick={share} disabled={sharing} className="w-full mt-5 font-sans"><Download />{sharing ? "Création de l'image…" : "Partager mon ticket"}</Button>{shareError && <p role="alert" className="text-destructive mt-2">{shareError}</p>}</>}
