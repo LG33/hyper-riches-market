@@ -9,11 +9,16 @@ import logoHyperRichesMarket from "@/assets/logo-hyper-riches-market.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
-    { title: "Hyper Riches Market — Et si tout devenait accessible ?" },
-    { name: "description", content: "Et si un foyer français moyen avait le pouvoir d'achat d'un milliardaire ? Explorez les prix, composez votre panier et comparez les revenus." },
-    { property: "og:title", content: "Hyper Riches Market — Le shopping à une autre échelle" },
-    { property: "og:description", content: "Un faux magasin, de vrais écarts de revenus. Découvrez le quotidien et le luxe avec les prix d'un milliardaire." },
-    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
+    { title: "Et si vous aviez le pouvoir d’achat d’un milliardaire ? | Hyper Riches Market" },
+    { name: "description", content: "Une expérience déconcertante pour mesurer les écarts de richesse en France : fausses réductions, vrais prix et pouvoir d’achat de milliardaire." },
+    { property: "og:type", content: "website" },
+    { property: "og:site_name", content: "Hyper Riches Market" },
+    { property: "og:locale", content: "fr_FR" },
+    { property: "og:title", content: "Et si vous aviez le pouvoir d’achat d’un milliardaire ?" },
+    { property: "og:description", content: "Une expérience déconcertante pour mesurer les écarts de richesse en France : fausses réductions, vraies inégalités." },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:title", content: "Et si vous aviez le pouvoir d’achat d’un milliardaire ?" },
+    { name: "twitter:description", content: "Fausses réductions, vraies inégalités. Une expérience déconcertante pour prendre la mesure des écarts de richesse en France." },
   ] }), component: Market,
 });
 type Department = Category | "deux";
