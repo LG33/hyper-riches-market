@@ -38,7 +38,7 @@ export async function renderTicketPng(d: TicketData): Promise<Blob> {
   }
 
   g.fillStyle = ink; g.textAlign = "center"; g.font = "500 30px Manrope, sans-serif";
-  let y = centeredWrap(`Si, avec ${formatEuro(d.householdIncome)} de revenus annuels, j'avais un pouvoir d'achat équivalent à ${d.billName}…`, 315);
+  let y = centeredWrap(`Si, avec ${formatEuro(d.householdIncome)} de revenus annuels, j'avais le pouvoir d'achat de ${d.billName.replace(/^Famille /, "la famille ")}…`, 315);
   g.font = "400 24px Manrope, sans-serif"; g.fillStyle = mutedInk;
   y = centeredWrap(`Tous mes prix seraient divisés par ${Math.round(d.divisor).toLocaleString("fr-FR")}.`, y + 5, 820, 36);
 
