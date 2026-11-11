@@ -35,16 +35,18 @@ function Market() {
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState("");
   useEffect(() => {
-    let selected = randomBillionaire().id;
+    let previousId: string | undefined;
     try {
       const saved = JSON.parse(sessionStorage.getItem(STORE) || "null");
       if (saved) {
         if (Number.isFinite(saved.income) && saved.income > 0) setIncome(saved.income);
-        if (BILLIONAIRES.some(b => b.id === saved.billId)) selected = saved.billId;
+        if (BILLIONAIRES.some(b => b.id === saved.billId)) previousId = saved.billId;
         if (saved.cart && typeof saved.cart === "object") setCart(Object.fromEntries(Object.entries(saved.cart).filter(([id, qty]) => PRODUCTS.some(p => p.id === id) && typeof qty === "number" && Number.isInteger(qty) && qty > 0)) as Record<string, number>);
       }
     } catch { /* session storage is optional */ }
-    setBillId(selected); setLoaded(true);
+    const candidates = BILLIONAIRES.filter(b => b.id !== previousId);
+    const selected = (candidates.length ? candidates : BILLIONAIRES)[Math.floor(Math.random() * (candidates.length || BILLIONAIRES.length))] ?? randomBillionaire();
+    setBillId(selected.id); setLoaded(true);
   }, []);
   useEffect(() => { if (loaded) { try { sessionStorage.setItem(STORE, JSON.stringify({ income, billId, cart })); } catch { /* optional */ } } }, [income, billId, cart, loaded]);
   const bill = BILLIONAIRES.find(b => b.id === billId) ?? BILLIONAIRES[0];
@@ -53,14 +55,12 @@ function Market() {
   const lines = Object.entries(cart).flatMap(([id, qty]) => { const p = PRODUCTS.find(p => p.id === id); return p ? [{ p, qty }] : []; });
   const count = lines.reduce((s, l) => s + l.qty, 0);
   const totalReal = lines.reduce((s, l) => s + l.p.price * l.qty, 0);
-  const userDays = daysOfIncome(totalReal, income);
-  const billDays = daysOfIncome(totalReal, bill?.income ?? 0);
   const filtered = useMemo(() => PRODUCTS.filter(p => !query || (p.name + p.desc).toLowerCase().includes(query.toLowerCase())), [query]);
   function add(id: string, delta = 1) { setCart(c => { const n = { ...c }, q = (c[id] ?? 0) + delta; if (q > 0) n[id] = q; else delete n[id]; return n; }); }
   async function share() {
     if (!bill) return;
     setSharing(true); setShareError("");
-    try { await shareTicket({ lines: lines.map(({ p, qty }) => ({ name: p.name, qty, real: p.price, sim: sim(p.price) })), totalReal, totalSim: sim(totalReal), userDays, billDays, billName: bill.name, billIncome: bill.income, billPerimeter: bill.perimeter, householdIncome: income, divisor: coef }); }
+    try { await shareTicket({ lines: lines.map(({ p, qty }) => ({ name: p.name, qty, real: p.price, sim: sim(p.price) })), totalReal, totalSim: sim(totalReal), billName: bill.name, billIncome: bill.income, householdIncome: income, divisor: coef }); }
     catch { setShareError("L'image n'a pas pu être créée. Réessayez."); } finally { setSharing(false); }
   }
   return <div className="min-h-screen">
@@ -122,10 +122,13 @@ function Market() {
     <footer className="max-w-6xl mx-auto px-5 md:px-8 py-10 pb-28 text-sm text-muted-foreground"><p className="font-bold text-foreground mb-2">hyper riches market.</p><p>Un faux magasin pour regarder les inégalités autrement. Rien n'est à vendre.</p><Button variant="link" className="px-0 mt-2" onClick={() => setModal("method")}>Sources et méthode<ArrowRight /></Button></footer>
     {count > 0 && modal !== "cart" && <Button onClick={() => setModal("cart")} className="fixed bottom-5 right-5 left-5 sm:left-auto z-30 h-14 shadow-card gap-6"><ShoppingBag />Mon ticket ({count})<span>{formatEuro(sim(totalReal))}</span><ArrowRight /></Button>}
     <Dialog open={modal !== null} onOpenChange={v => { if (!v) setModal(null); }}>
-      <DialogContent className={`max-h-[90dvh] overflow-y-auto w-[calc(100%-2rem)] rounded-lg ${modal === "cart" ? "max-w-md" : "max-w-xl"}`}>
-        <DialogTitle>{modal === "income" ? "Les revenus de votre foyer" : modal === "billionaire" ? "Votre famille de référence" : modal === "cart" ? "Votre ticket" : "Sources et méthode"}</DialogTitle>
-        <DialogDescription>{modal === "cart" ? "Hyper Riches Market · Simulation pédagogique" : modal === "income" ? "Montant annuel du foyer utilisé dans la simulation. La valeur de départ est la référence statistique du CSV." : modal === "billionaire" ? "Dividendes familiaux annuels de référence issus du CSV ; le statut de chaque donnée est indiqué ci-dessous." : "Des écarts de revenus, pas un calcul de pouvoir d'achat réel."}</DialogDescription>
-        {modal === "income" && <><label className="text-sm font-semibold" htmlFor="income">Revenus annuels du foyer (€)</label><input autoFocus id="income" type="number" min={1} step={1000} value={income} onChange={e => { const n = Number(e.target.value); if (n > 0 && Number.isFinite(n)) setIncome(n); }} className="border rounded-md px-4 py-3 text-2xl font-bold w-full" /><p className="text-xs text-muted-foreground">Valeur de référence issue du CSV : revenu disponible brut moyen annuel d’un ménage français. Cette notion diffère du revenu brut saisi ici.</p><Button variant="outline" onClick={() => setIncome(DEFAULT_INCOME)}>Foyer français moyen · {formatEuro(DEFAULT_INCOME)}</Button><Button onClick={() => setModal(null)}>Valider<Check /></Button></>}
+      <DialogContent className={`max-h-[90dvh] overflow-hidden flex flex-col w-[calc(100%-2rem)] rounded-lg ${modal === "cart" ? "max-w-md" : "max-w-xl"}`}>
+        <div className="shrink-0 border-b pb-3 pr-8">
+          <DialogTitle>{modal === "income" ? "Les revenus de votre foyer" : modal === "billionaire" ? "Votre famille de référence" : modal === "cart" ? "Votre ticket" : "Sources et méthode"}</DialogTitle>
+          <DialogDescription>{modal === "cart" ? "Hyper Riches Market · Simulation pédagogique" : modal === "income" ? "Montant annuel du foyer utilisé dans la simulation." : modal === "billionaire" ? "Dividendes annuels associés aux participations des familles sélectionnées." : "Des écarts de revenus, pas un calcul de pouvoir d'achat réel."}</DialogDescription>
+        </div>
+        <div className="min-h-0 overflow-y-auto overscroll-contain pt-4">
+        {modal === "income" && <><label className="text-sm font-semibold" htmlFor="income">Revenus annuels du foyer (€)</label><input autoFocus id="income" type="number" min={1} step={1000} value={income} onChange={e => { const n = Number(e.target.value); if (n > 0 && Number.isFinite(n)) setIncome(n); }} className="border rounded-md px-4 py-3 text-2xl font-bold w-full" /><p className="text-xs text-muted-foreground">La valeur de départ correspond à une moyenne statistique de revenu disponible brut annuel d’un ménage français. Cette notion diffère du revenu brut saisi ici.</p><Button variant="outline" onClick={() => setIncome(DEFAULT_INCOME)}>Foyer français moyen · {formatEuro(DEFAULT_INCOME)}</Button><Button onClick={() => setModal(null)}>Valider<Check /></Button></>}
         {modal === "billionaire" && <div className="space-y-2">{BILLIONAIRES.map(b => <Button key={b.id} variant="outline" className={`h-auto py-4 w-full justify-between text-left ${b.id === billId ? "border-sale bg-accent" : ""}`} onClick={() => { setBillId(b.id); setModal(null); }}><span className="whitespace-normal"><span className="block font-bold">{b.name}</span><span className="block text-xs text-muted-foreground mt-1">{b.tagline} · {formatBig(b.income)} / an</span></span>{b.id === billId ? <Check className="text-sale" /> : <ArrowRight />}</Button>)}</div>}
         {modal === "method" && <div className="text-sm space-y-5">
           <div className="bg-muted p-4 rounded-md">
@@ -154,11 +157,12 @@ function Market() {
             <p className="text-xs font-bold text-sale">{b.status}</p>
           </div>)}
         </div>}
-        {modal === "cart" && <div className="font-mono text-sm"><div className="text-center border-b border-dashed pb-5"><img src={logoHyperRichesMarket} alt="hyper riches market." loading="lazy" width={1507} height={541} className="mx-auto h-16 w-auto" /><p className="mt-3 leading-relaxed">Si, avec {formatEuro(income)} de revenus annuels, j'avais le pouvoir d'achat de la {bill?.name?.replace(/^Famille /, "famille ")}…</p><p className="text-xs text-muted-foreground mt-2">Tous mes prix seraient divisés par {Math.round(coef).toLocaleString("fr-FR")}.</p><p className="text-xs font-bold mt-3">Référence annuelle : {formatBig(bill?.income ?? 0)} de dividendes familiaux bruts</p><p className="text-[10px] text-muted-foreground mt-1">{bill?.perimeter}</p></div>
+        {modal === "cart" && <div className="font-mono text-sm"><div className="text-center border-b border-dashed pb-5"><img src={logoHyperRichesMarket} alt="hyper riches market." loading="lazy" width={1507} height={541} className="mx-auto h-16 w-auto" /><p className="mt-3 leading-relaxed">Et si tes revenus actuels te donnaient le pouvoir d'achat de {bill?.name?.replace(/^Famille /, "la famille ")} ({formatBig(bill?.income ?? 0)} / an) ?</p><p className="text-xs font-bold text-sale mt-3">Tous les prix seraient divisés par {Math.round(coef).toLocaleString("fr-FR")} !</p></div>
           {!lines.length && <p className="text-center py-8">Votre ticket est encore vide.</p>}
           {lines.map(({ p, qty }) => <div key={p.id} className="py-4 border-b border-dashed"><div className="flex justify-between gap-3"><span className="font-bold">{p.name}</span><span className="text-sale shrink-0 font-bold">{formatEuro(sim(p.price) * qty)}</span></div><div className="text-xs text-muted-foreground mt-1">Prix réel : <s>{formatEuro(p.price * qty)}</s></div><div className="flex items-center gap-3 mt-2"><Button variant="outline" size="icon" onClick={() => add(p.id, -1)} aria-label={`Retirer un ${p.name}`}><Minus /></Button><span>{qty}</span><Button variant="outline" size="icon" onClick={() => add(p.id)} aria-label={`Ajouter un ${p.name}`}><Plus /></Button><Button variant="ghost" size="icon" className="ml-auto" onClick={() => add(p.id, -qty)} aria-label={`Supprimer ${p.name}`}><Trash2 /></Button></div></div>)}
-          {!!lines.length && <><div className="flex justify-between mt-5"><span>Prix réel</span><s>{formatEuro(totalReal)}</s></div><div className="flex justify-between text-xl text-sale font-bold mt-2"><span>À PAYER</span><span>{formatEuro(sim(totalReal))}</span></div><div className="border-y border-dashed py-5 mt-5 space-y-3"><p className="font-sans font-bold">Référence annuelle : {formatBig(bill?.income ?? 0)} de dividendes familiaux bruts</p><p className="text-[11px] text-muted-foreground">{bill?.perimeter}</p><p className="font-sans font-bold pt-2">Ce panier représente, au prix réel :</p><p><span className="font-bold">Vous</span> · {formatDuration(userDays)} de revenus</p><p><span className="font-bold">{bill?.name}</span> · {formatDuration(billDays)} de revenus</p></div><p className="text-[11px] text-muted-foreground mt-3">Base {WORKING_DAYS} jours/an, 7 h/jour. Jours équivalents de revenus, pas de travail effectif. Comparaison illustrative de flux annuels.</p><Button onClick={share} disabled={sharing} className="w-full mt-5 font-sans"><Download />{sharing ? "Création de l'image…" : "Partager mon ticket"}</Button>{shareError && <p role="alert" className="text-destructive mt-2">{shareError}</p>}</>}
+          {!!lines.length && <><div className="flex justify-between mt-5"><span>Prix réel</span><s>{formatEuro(totalReal)}</s></div><div className="flex justify-between text-xl text-sale font-bold mt-2"><span>À PAYER</span><span>{formatEuro(sim(totalReal))}</span></div><Button variant="link" className="w-full mt-4 font-sans" onClick={() => setModal("method")}>Sources et méthode<ArrowRight /></Button><Button onClick={share} disabled={sharing} className="w-full mt-5 font-sans"><Download />{sharing ? "Création de l'image…" : "Partager mon ticket"}</Button>{shareError && <p role="alert" className="text-destructive mt-2">{shareError}</p>}</>}
         </div>}
+        </div>
       </DialogContent>
     </Dialog>
   </div>;
