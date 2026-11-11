@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowRight, Check, Minus, Pencil, Plus, Search, ShoppingBag, Trash2, Download, Info } from "lucide-react";
+import { ArrowRight, Check, Minus, Pencil, Plus, Search, ShoppingBag, Trash2, Download, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { BILLIONAIRES, PRODUCTS, CATEGORIES, DEFAULT_INCOME, HOUSEHOLD_REFERENCE, WORKING_DAYS, coefficient, simulatedPrice, isTwoEuro, daysOfIncome, formatEuro, formatBig, formatDuration, formatDiscount, randomBillionaire, type Product, type Category } from "@/lib/market";
