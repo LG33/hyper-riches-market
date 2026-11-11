@@ -26,7 +26,6 @@ function Market() {
   const [cart, setCart] = useState<Record<string, number>>({});
   const [loaded, setLoaded] = useState(false);
   const [modal, setModal] = useState<"income" | "billionaire" | "method" | "cart" | null>(null);
-  const [expanded, setExpanded] = useState<Department[]>([]);
   const [query, setQuery] = useState("");
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState("");
@@ -56,7 +55,7 @@ function Market() {
   async function share() {
     if (!bill) return;
     setSharing(true); setShareError("");
-    try { await shareTicket({ lines: lines.map(({ p, qty }) => ({ name: p.name, qty, real: p.price, sim: sim(p.price) })), totalReal, totalSim: sim(totalReal), userDays, billDays, billName: bill.name, householdIncome: income, divisor: coef }); }
+    try { await shareTicket({ lines: lines.map(({ p, qty }) => ({ name: p.name, qty, real: p.price, sim: sim(p.price) })), totalReal, totalSim: sim(totalReal), userDays, billDays, billName: bill.name, billIncome: bill.income, billPerimeter: bill.perimeter, householdIncome: income, divisor: coef }); }
     catch { setShareError("L'image n'a pas pu être créée. Réessayez."); } finally { setSharing(false); }
   }
   return <div className="min-h-screen">
@@ -85,7 +84,7 @@ function Market() {
           <Button variant="link" className="shrink-0 justify-start px-0 text-foreground" onClick={() => setModal("method")}><Info />Sources et méthode<ArrowRight /></Button>
         </div>
       </section>
-      <nav aria-label="Rayons" className="border-b">
+      <nav aria-label="Rayons" className="sticky top-16 md:top-20 z-20 border-b bg-background/95 backdrop-blur">
         <div className="mx-auto max-w-6xl px-5 md:px-8 flex gap-6 overflow-x-auto pb-4">
           {DEPARTMENTS.map(d => <a key={d} href={`#rayon-${d}`} className="shrink-0 text-sm font-semibold hover:text-sale">{CATEGORIES[d].label}</a>)}
         </div>
@@ -97,11 +96,10 @@ function Market() {
         const items = filtered.filter(p => d === "deux" ? isTwoEuro(p.price, coef) : p.category === d);
         const preferred = { quotidien: "baguette", deux: "sportive", abordable: "montre", folies: "yacht" }[d];
         const featured = items.find(p => p.id === preferred) ?? items[0];
-        const isExpanded = expanded.includes(d) || !!query;
+        const isExpanded = true;
         return <section id={`rayon-${d}`} key={d} className="scroll-mt-24 border-b py-10 md:py-12">
           <div className="mx-auto max-w-6xl px-5 md:px-8">
             <div className="flex items-end justify-between gap-4 mb-6"><div><h2 className="text-3xl font-extrabold">{CATEGORIES[d].label}</h2><p className="text-sm text-muted-foreground mt-2">{d === "deux" ? "Entre 1,50 € et 2,50 €, selon votre profil." : CATEGORIES[d].hook}</p></div>
-              {items.length > 1 && <Button variant="ghost" className="shrink-0" onClick={() => setExpanded(a => a.includes(d) ? a.filter(x => x !== d) : [...a, d])}><span>{isExpanded ? "Réduire le rayon" : "Voir tout le rayon"}</span><ArrowDown className={isExpanded ? "rotate-180" : ""} /></Button>}
             </div>
             {featured ? <div className="grid md:grid-cols-[1.65fr_1fr] bg-muted overflow-hidden rounded-md">
               <ProductImage p={featured} featured />
@@ -151,10 +149,10 @@ function Market() {
             <p className="text-xs font-bold text-sale">{b.status}</p>
           </div>)}
         </div>}
-        {modal === "cart" && <div className="font-mono text-sm"><div className="text-center border-b border-dashed pb-5"><img src={logoHyperRichesMarket} alt="hyper riches market." loading="lazy" width={1507} height={541} className="mx-auto h-16 w-auto" /><p className="mt-3 leading-relaxed">Si, avec {formatEuro(income)} de revenus annuels, j'avais le pouvoir d'achat de la {bill?.name?.replace(/^Famille /, "famille ")}…</p><p className="text-xs text-muted-foreground mt-2">Tous mes prix seraient divisés par {Math.round(coef).toLocaleString("fr-FR")}.</p></div>
+        {modal === "cart" && <div className="font-mono text-sm"><div className="text-center border-b border-dashed pb-5"><img src={logoHyperRichesMarket} alt="hyper riches market." loading="lazy" width={1507} height={541} className="mx-auto h-16 w-auto" /><p className="mt-3 leading-relaxed">Si, avec {formatEuro(income)} de revenus annuels, j'avais le pouvoir d'achat de la {bill?.name?.replace(/^Famille /, "famille ")}…</p><p className="text-xs text-muted-foreground mt-2">Tous mes prix seraient divisés par {Math.round(coef).toLocaleString("fr-FR")}.</p><p className="text-xs font-bold mt-3">Référence annuelle : {formatBig(bill?.income ?? 0)} de dividendes familiaux bruts</p><p className="text-[10px] text-muted-foreground mt-1">{bill?.perimeter}</p></div>
           {!lines.length && <p className="text-center py-8">Votre ticket est encore vide.</p>}
           {lines.map(({ p, qty }) => <div key={p.id} className="py-4 border-b border-dashed"><div className="flex justify-between gap-3"><span className="font-bold">{p.name}</span><span className="text-sale shrink-0 font-bold">{formatEuro(sim(p.price) * qty)}</span></div><div className="text-xs text-muted-foreground mt-1">Prix réel : <s>{formatEuro(p.price * qty)}</s></div><div className="flex items-center gap-3 mt-2"><Button variant="outline" size="icon" onClick={() => add(p.id, -1)} aria-label={`Retirer un ${p.name}`}><Minus /></Button><span>{qty}</span><Button variant="outline" size="icon" onClick={() => add(p.id)} aria-label={`Ajouter un ${p.name}`}><Plus /></Button><Button variant="ghost" size="icon" className="ml-auto" onClick={() => add(p.id, -qty)} aria-label={`Supprimer ${p.name}`}><Trash2 /></Button></div></div>)}
-          {!!lines.length && <><div className="flex justify-between mt-5"><span>Prix réel</span><s>{formatEuro(totalReal)}</s></div><div className="flex justify-between text-xl text-sale font-bold mt-2"><span>À PAYER</span><span>{formatEuro(sim(totalReal))}</span></div><div className="border-y border-dashed py-5 mt-5 space-y-3"><p className="font-sans font-bold">Ce panier représente, au prix réel :</p><p><span className="font-bold">Vous</span> · {formatDuration(userDays)} de revenus</p><p><span className="font-bold">{bill?.name}</span> · {formatDuration(billDays)} de revenus</p></div><p className="text-[11px] text-muted-foreground mt-3">Base {WORKING_DAYS} jours/an, 7 h/jour. Jours équivalents de revenus, pas de travail effectif. Comparaison illustrative de flux annuels.</p><Button onClick={share} disabled={sharing} className="w-full mt-5 font-sans"><Download />{sharing ? "Création de l'image…" : "Partager mon ticket"}</Button>{shareError && <p role="alert" className="text-destructive mt-2">{shareError}</p>}</>}
+          {!!lines.length && <><div className="flex justify-between mt-5"><span>Prix réel</span><s>{formatEuro(totalReal)}</s></div><div className="flex justify-between text-xl text-sale font-bold mt-2"><span>À PAYER</span><span>{formatEuro(sim(totalReal))}</span></div><div className="border-y border-dashed py-5 mt-5 space-y-3"><p className="font-sans font-bold">Référence annuelle : {formatBig(bill?.income ?? 0)} de dividendes familiaux bruts</p><p className="text-[11px] text-muted-foreground">{bill?.perimeter}</p><p className="font-sans font-bold pt-2">Ce panier représente, au prix réel :</p><p><span className="font-bold">Vous</span> · {formatDuration(userDays)} de revenus</p><p><span className="font-bold">{bill?.name}</span> · {formatDuration(billDays)} de revenus</p></div><p className="text-[11px] text-muted-foreground mt-3">Base {WORKING_DAYS} jours/an, 7 h/jour. Jours équivalents de revenus, pas de travail effectif. Comparaison illustrative de flux annuels.</p><Button onClick={share} disabled={sharing} className="w-full mt-5 font-sans"><Download />{sharing ? "Création de l'image…" : "Partager mon ticket"}</Button>{shareError && <p role="alert" className="text-destructive mt-2">{shareError}</p>}</>}
         </div>}
       </DialogContent>
     </Dialog>
