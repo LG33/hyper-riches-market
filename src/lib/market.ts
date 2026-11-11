@@ -32,6 +32,12 @@ const profileRecords = profileRows.slice(1).map(values =>
 );
 const householdRecord = profileRecords.find(row => row["Ménage / famille"] === "Ménage français moyen");
 export const DEFAULT_INCOME = Number(householdRecord?.["Revenu brut annuel retenu"] ?? 60000);
+export const HOUSEHOLD_REFERENCE = {
+  name: householdRecord?.["Ménage / famille"] ?? "Ménage français moyen",
+  perimeter: householdRecord?.["Périmètre"] ?? "Non précisé",
+  calculation: householdRecord?.["Calcul"] ?? "Non précisé",
+  source: householdRecord?.["Source"] ?? "",
+};
 
 export type Billionaire = {
   id: string;
