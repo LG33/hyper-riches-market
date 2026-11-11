@@ -63,7 +63,7 @@ export async function renderTicketPng(d: TicketData): Promise<Blob> {
   g.fillText("À PAYER", 110, y); g.textAlign = "right"; g.fillText(formatEuro(d.totalSim), W - 110, y); y += 85;
 
   g.fillStyle = mutedInk; g.textAlign = "center"; g.font = "400 21px Manrope, sans-serif";
-  centeredWrap("Sources et méthode : hyper-riches-market.lovable.app", H - 145, 820, 32);
+  centeredWrap("Sources et méthode : https://hyper-riches-market.lovable.app", H - 145, 820, 32);
   return new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error("Image export failed")), "image/png"));
 }
 
