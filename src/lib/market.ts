@@ -3,9 +3,35 @@ import jet from "@/assets/jet.jpg";
 import watch from "@/assets/watch.jpg";
 import baguette from "@/assets/baguette.jpg";
 import sportsCar from "@/assets/sports-car.jpg";
+import profilesCsv from "@/data/profiles.csv?raw";
 
 export const WORKING_DAYS = 220;
-export const DEFAULT_INCOME = 58000;
+
+function parseCsv(input: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [], cell = "", quoted = false;
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i]!;
+    if (ch === '"' && quoted && input[i + 1] === '"') { cell += '"'; i++; }
+    else if (ch === '"') quoted = !quoted;
+    else if (ch === "," && !quoted) { row.push(cell); cell = ""; }
+    else if ((ch === "\n" || ch === "\r") && !quoted) {
+      if (ch === "\r" && input[i + 1] === "\n") i++;
+      row.push(cell); if (row.some(v => v.trim())) rows.push(row);
+      row = []; cell = "";
+    } else cell += ch;
+  }
+  if (cell.length || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+
+const profileRows = parseCsv(profilesCsv);
+const profileHeaders = profileRows[0] ?? [];
+const profileRecords = profileRows.slice(1).map(values =>
+  Object.fromEntries(profileHeaders.map((key, i) => [key.trim(), (values[i] ?? "").trim()]))
+);
+const householdRecord = profileRecords.find(row => row["Ménage / famille"] === "Ménage français moyen");
+export const DEFAULT_INCOME = Number(householdRecord?.["Revenu brut annuel retenu"] ?? 60000);
 
 export type Billionaire = {
   id: string;
@@ -16,27 +42,38 @@ export type Billionaire = {
   nature: string;
   year: string;
   source: string;
+  sourceUrl: string;
+  perimeter: string;
+  calculation: string;
   status: string;
 };
 
-// Montants fournis par le cahier des charges : estimations provisoires, à vérifier.
-export const BILLIONAIRES: Billionaire[] = [
-  { id: "arnault", name: "Bernard Arnault", initials: "BA", income: 3_200_000_000, tagline: "LVMH",
-    nature: "Estimation de dividendes bruts associés aux participations familiales (pouvant être versés à des holdings).",
-    year: "À confirmer (estimation récente)", source: "Valeur provisoire du prototype — à vérifier dans les documents de référence LVMH / Agache.", status: "Estimation à vérifier" },
-  { id: "bettencourt", name: "Françoise Bettencourt Meyers", initials: "FB", income: 1_340_000_000, tagline: "L'Oréal",
-    nature: "Estimation de dividendes bruts associés aux participations familiales (pouvant être versés à des holdings).",
-    year: "À confirmer (estimation récente)", source: "Valeur provisoire du prototype — à vérifier dans les documents de référence L'Oréal / Téthys.", status: "Estimation à vérifier" },
-  { id: "niel", name: "Xavier Niel", initials: "XN", income: 500_000_000, tagline: "Iliad",
-    nature: "Estimation de revenus / dividendes bruts associés aux participations.",
-    year: "À confirmer", source: "Valeur provisoire du prototype — à vérifier.", status: "Estimation à vérifier" },
-  { id: "bollore", name: "Vincent Bolloré", initials: "VB", income: 160_000_000, tagline: "Groupe Bolloré",
-    nature: "Estimation de dividendes bruts associés aux participations familiales.",
-    year: "À confirmer", source: "Valeur provisoire du prototype — à vérifier.", status: "Estimation à vérifier" },
-  { id: "pinault", name: "François Pinault", initials: "FP", income: 150_000_000, tagline: "Artémis / Kering",
-    nature: "Estimation de dividendes bruts associés aux participations familiales (holding Artémis).",
-    year: "À confirmer", source: "Valeur provisoire du prototype — à vérifier.", status: "Estimation à vérifier" },
-];
+const profileMeta: Record<string, { id: string; initials: string; tagline: string }> = {
+  "Famille Arnault": { id: "arnault", initials: "FA", tagline: "LVMH" },
+  "Famille Bettencourt Meyers": { id: "bettencourt", initials: "FB", tagline: "L'Oréal" },
+  "Famille Pinault": { id: "pinault", initials: "FP", tagline: "Kering" },
+  "Famille Bolloré": { id: "bollore", initials: "FB", tagline: "Groupe Bolloré" },
+  "Famille Dassault": { id: "dassault", initials: "FD", tagline: "Dassault Aviation" },
+};
+
+export const BILLIONAIRES: Billionaire[] = profileRecords
+  .filter(row => row["Ménage / famille"] !== "Ménage français moyen")
+  .map(row => {
+    const name = row["Ménage / famille"] ?? "Famille non renseignée";
+    const meta = profileMeta[name] ?? { id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-"), initials: "??", tagline: "" };
+    const perimeter = row["Périmètre"] ?? "";
+    const calculation = row["Calcul"] ?? "";
+    const sourceUrl = row["Source"] ?? "";
+    const yearMatch = perimeter.match(/(?:versés?|versée|dividende).*?(20\d{2}).*?(?:titre de )?(20\d{2})/i);
+    const year = yearMatch ? `${yearMatch[1]} au titre de ${yearMatch[2]}` : (perimeter.match(/20\d{2}/)?.[0] ?? "Non précisée");
+    const estimated = /estimation|environ|approximativement/i.test(perimeter + " " + calculation);
+    return {
+      id: meta.id, name, initials: meta.initials, tagline: meta.tagline,
+      income: Number(row["Revenu brut annuel retenu"] ?? 0),
+      nature: perimeter, perimeter, calculation, year, sourceUrl,
+      source: sourceUrl, status: estimated ? "Estimation" : "Calcul à partir des données publiées",
+    };
+  });
 
 export type Category = "quotidien" | "abordable" | "folies";
 export type Product = { id: string; name: string; desc: string; price: number; category: Category; img?: string; emoji: string };
