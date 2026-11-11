@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { BILLIONAIRES, PRODUCTS, CATEGORIES, DEFAULT_INCOME, WORKING_DAYS, coefficient, simulatedPrice, isTwoEuro, daysOfIncome, formatEuro, formatBig, formatDuration, formatDiscount, randomBillionaire, type Product, type Category } from "@/lib/market";
 import { shareTicket } from "@/lib/share-ticket";
+import logoHyperRichesMarket from "@/assets/logo-hyper-riches-market.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({ meta: [
@@ -27,7 +28,6 @@ function Market() {
   const [modal, setModal] = useState<"income" | "billionaire" | "method" | "cart" | null>(null);
   const [expanded, setExpanded] = useState<Department[]>([]);
   const [query, setQuery] = useState("");
-  const [maxSim, setMaxSim] = useState("any");
   const [sharing, setSharing] = useState(false);
   const [shareError, setShareError] = useState("");
   useEffect(() => {
@@ -51,18 +51,18 @@ function Market() {
   const totalReal = lines.reduce((s, l) => s + l.p.price * l.qty, 0);
   const userDays = daysOfIncome(totalReal, income);
   const billDays = daysOfIncome(totalReal, bill?.income ?? 0);
-  const filtered = useMemo(() => PRODUCTS.filter(p => (!query || (p.name + p.desc).toLowerCase().includes(query.toLowerCase())) && (maxSim === "any" || simulatedPrice(p.price, coef) <= Number(maxSim))), [query, maxSim, coef]);
+  const filtered = useMemo(() => PRODUCTS.filter(p => !query || (p.name + p.desc).toLowerCase().includes(query.toLowerCase())), [query]);
   function add(id: string, delta = 1) { setCart(c => { const n = { ...c }, q = (c[id] ?? 0) + delta; if (q > 0) n[id] = q; else delete n[id]; return n; }); }
   async function share() {
     if (!bill) return;
     setSharing(true); setShareError("");
-    try { await shareTicket({ lines: lines.map(({ p, qty }) => ({ name: p.name, qty, real: p.price, sim: sim(p.price) })), totalReal, totalSim: sim(totalReal), userDays, billDays, billName: bill.name, householdIncome: income }); }
+    try { await shareTicket({ lines: lines.map(({ p, qty }) => ({ name: p.name, qty, real: p.price, sim: sim(p.price) })), totalReal, totalSim: sim(totalReal), userDays, billDays, billName: bill.name, householdIncome: income, divisor: coef }); }
     catch { setShareError("L'image n'a pas pu être créée. Réessayez."); } finally { setSharing(false); }
   }
   return <div className="min-h-screen">
     <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto max-w-6xl px-5 md:px-8 h-16 md:h-20 flex items-center justify-between gap-3">
-        <a href="/" aria-label="Hyper Riches Market, accueil" className="font-display font-extrabold text-xl md:text-2xl leading-none">hyper riches<span className="text-sale"> market.</span></a>
+        <a href="/" aria-label="Hyper Riches Market, accueil" className="shrink-0"><img src={logoHyperRichesMarket} alt="" width={1507} height={541} className="h-14 md:h-16 w-auto" /></a>
         <Button variant="outline" onClick={() => setModal("cart")} className="gap-2"><ShoppingBag /><span className="hidden sm:inline">Mon panier</span><span className="text-sale font-bold">{count}</span></Button>
       </div>
     </header>
@@ -79,8 +79,8 @@ function Market() {
         </div>
         <div className="mt-5 md:mt-8 border-y py-3 md:py-5 flex flex-col md:flex-row gap-2 md:gap-5 md:items-center md:justify-between">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold">{formatEuro(income)} / an pour votre foyer <span className="text-muted-foreground mx-1">face à</span> {formatBig(bill?.income ?? 0)} / an de référence</p>
-            <p className="text-sm text-muted-foreground mt-2">Chaque prix est divisé par {Math.round(coef).toLocaleString("fr-FR")}. Une comparaison de revenus bruts, pas une promotion réelle.</p>
+            <p className="text-sm">Ici, on fait comme si {formatEuro(income)} de revenus annuels donnait un pouvoir d'achat équivalent à celui de {bill?.name} ({formatBig(bill?.income ?? 0)} / an).</p>
+            <p className="text-sm font-bold mt-2">Chaque prix serait divisé par {Math.round(coef).toLocaleString("fr-FR")} !</p>
           </div>
           <Button variant="link" className="shrink-0 justify-start px-0 text-foreground" onClick={() => setModal("method")}><Info />Sources et méthode<ArrowRight /></Button>
         </div>
@@ -90,19 +90,18 @@ function Market() {
           {DEPARTMENTS.map(d => <a key={d} href={`#rayon-${d}`} className="shrink-0 text-sm font-semibold hover:text-sale">{CATEGORIES[d].label}</a>)}
         </div>
       </nav>
-      <div className="mx-auto max-w-6xl px-5 md:px-8 mt-8 flex flex-col sm:flex-row gap-3">
-        <label className="flex items-center gap-3 flex-1 border-b py-2 text-muted-foreground"><Search size={18} /><input aria-label="Rechercher un produit" placeholder="Une envie en particulier ?" value={query} onChange={e => setQuery(e.target.value)} className="w-full bg-transparent outline-none text-sm text-foreground" /></label>
-        <select aria-label="Prix maximum" value={maxSim} onChange={e => setMaxSim(e.target.value)} className="border-b bg-background py-2 text-sm"><option value="any">Tous les prix</option><option value="1">Moins de 1 €</option><option value="10">Moins de 10 €</option><option value="100">Moins de 100 €</option></select>
+      <div className="mx-auto max-w-6xl px-5 md:px-8 mt-8">
+        <label className="flex items-center gap-3 border-b py-2 text-muted-foreground"><Search size={18} /><input aria-label="Rechercher un produit" placeholder="Une envie en particulier ?" value={query} onChange={e => setQuery(e.target.value)} className="w-full bg-transparent outline-none text-sm text-foreground" /></label>
       </div>
       {DEPARTMENTS.map((d, i) => {
         const items = filtered.filter(p => d === "deux" ? isTwoEuro(p.price, coef) : p.category === d);
         const preferred = { quotidien: "baguette", deux: "sportive", abordable: "montre", folies: "yacht" }[d];
         const featured = items.find(p => p.id === preferred) ?? items[0];
-        const isExpanded = expanded.includes(d) || !!query || maxSim !== "any";
+        const isExpanded = expanded.includes(d) || !!query;
         return <section id={`rayon-${d}`} key={d} className="scroll-mt-24 border-b py-10 md:py-12">
           <div className="mx-auto max-w-6xl px-5 md:px-8">
-            <div className="flex items-end justify-between gap-4 mb-6"><div><p className="text-xs text-muted-foreground mb-2">RAYON 0{i + 1} · {items.length} ARTICLES</p><h2 className="text-3xl font-extrabold">{CATEGORIES[d].label}</h2><p className="text-sm text-muted-foreground mt-2">{d === "deux" ? "Entre 1,50 € et 2,50 €, selon votre profil." : CATEGORIES[d].hook}</p></div>
-              {items.length > 1 && <Button variant="ghost" className="shrink-0" onClick={() => setExpanded(a => a.includes(d) ? a.filter(x => x !== d) : [...a, d])}><span className="hidden sm:inline">{isExpanded ? "Réduire" : "Tout le rayon"}</span><ArrowDown className={isExpanded ? "rotate-180" : ""} /></Button>}
+            <div className="flex items-end justify-between gap-4 mb-6"><div><h2 className="text-3xl font-extrabold">{CATEGORIES[d].label}</h2><p className="text-sm text-muted-foreground mt-2">{d === "deux" ? "Entre 1,50 € et 2,50 €, selon votre profil." : CATEGORIES[d].hook}</p></div>
+              {items.length > 1 && <Button variant="ghost" className="shrink-0" onClick={() => setExpanded(a => a.includes(d) ? a.filter(x => x !== d) : [...a, d])}><span>{isExpanded ? "Réduire le rayon" : "Voir tout le rayon"}</span><ArrowDown className={isExpanded ? "rotate-180" : ""} /></Button>}
             </div>
             {featured ? <div className="grid md:grid-cols-[1.65fr_1fr] bg-muted overflow-hidden rounded-md">
               <ProductImage p={featured} featured />
@@ -126,7 +125,7 @@ function Market() {
         {modal === "income" && <><label className="text-sm font-semibold" htmlFor="income">Revenus annuels bruts du foyer (€)</label><input autoFocus id="income" type="number" min={1} step={1000} value={income} onChange={e => { const n = Number(e.target.value); if (n > 0 && Number.isFinite(n)) setIncome(n); }} className="border rounded-md px-4 py-3 text-2xl font-bold w-full" /><p className="text-xs text-muted-foreground">58 000 € : hypothèse du foyer français moyen dans cette simulation, référence statistique à confirmer.</p><Button variant="outline" onClick={() => setIncome(DEFAULT_INCOME)}>Foyer français moyen · {formatEuro(DEFAULT_INCOME)}</Button><Button onClick={() => setModal(null)}>Valider<Check /></Button></>}
         {modal === "billionaire" && <div className="space-y-2">{BILLIONAIRES.map(b => <Button key={b.id} variant="outline" className={`h-auto py-4 w-full justify-between text-left ${b.id === billId ? "border-sale bg-accent" : ""}`} onClick={() => { setBillId(b.id); setModal(null); }}><span className="whitespace-normal"><span className="block font-bold">{b.name}</span><span className="block text-xs text-muted-foreground mt-1">{b.tagline} · {formatBig(b.income)} / an</span></span>{b.id === billId ? <Check className="text-sale" /> : <ArrowRight />}</Button>)}</div>}
         {modal === "method" && <div className="text-sm space-y-5"><div className="bg-muted p-4 rounded-md"><p className="font-bold">Prix simulé = prix réel × revenus du foyer ÷ revenus de référence</p><p className="mt-2">Le pourcentage est tronqué à deux décimales pour ne jamais afficher −100 % lorsque le prix reste positif.</p></div><p>Les revenus de votre foyer sont exprimés en brut, avant impôts et cotisations. Pour les grandes fortunes, les montants sont des estimations de revenus ou dividendes associés à leurs participations. Ils peuvent être perçus par des holdings et ne constituent pas nécessairement des revenus personnels disponibles. La fiscalité n'est pas prise en compte.</p><p>Le foyer français moyen à {formatEuro(DEFAULT_INCOME)} est une hypothèse du prototype, sans référence statistique vérifiée. Le rayon « Tout à 2 € » contient les articles entre 1,50 € et 2,50 €.</p><p>Les durées utilisent {WORKING_DAYS} jours par an, à 7 heures par jour : des jours équivalents de revenus, pas des jours effectivement travaillés.</p>{BILLIONAIRES.map(b => <div key={b.id} className="border-t pt-4"><h3 className="font-bold">{b.name} · {formatBig(b.income)} / an</h3><p className="mt-1">{b.nature}</p><p className="text-muted-foreground mt-2">Année : {b.year}<br />Source : {b.source}</p><p className="text-sale text-xs font-bold mt-2">{b.status}</p></div>)}</div>}
-        {modal === "cart" && <div className="font-mono text-sm"><div className="text-center border-b border-dashed pb-5"><p className="font-sans font-extrabold text-xl">hyper riches market.</p><p className="mt-3 leading-relaxed">Si, avec {formatEuro(income)} de revenus annuels bruts, j'avais un pouvoir d'achat équivalent à {bill?.name}…</p><p className="text-xs text-muted-foreground mt-2">Tous mes prix seraient divisés par {Math.round(coef).toLocaleString("fr-FR")}.</p></div>
+        {modal === "cart" && <div className="font-mono text-sm"><div className="text-center border-b border-dashed pb-5"><img src={logoHyperRichesMarket} alt="hyper riches market." loading="lazy" width={1507} height={541} className="mx-auto h-16 w-auto" /><p className="mt-3 leading-relaxed">Si, avec {formatEuro(income)} de revenus annuels bruts, j'avais un pouvoir d'achat équivalent à {bill?.name}…</p><p className="text-xs text-muted-foreground mt-2">Tous mes prix seraient divisés par {Math.round(coef).toLocaleString("fr-FR")}.</p></div>
           {!lines.length && <p className="text-center py-8">Votre ticket est encore vide.</p>}
           {lines.map(({ p, qty }) => <div key={p.id} className="py-4 border-b border-dashed"><div className="flex justify-between gap-3"><span className="font-bold">{p.name}</span><span className="text-sale shrink-0 font-bold">{formatEuro(sim(p.price) * qty)}</span></div><div className="text-xs text-muted-foreground mt-1">Prix réel : <s>{formatEuro(p.price * qty)}</s></div><div className="flex items-center gap-3 mt-2"><Button variant="outline" size="icon" onClick={() => add(p.id, -1)} aria-label={`Retirer un ${p.name}`}><Minus /></Button><span>{qty}</span><Button variant="outline" size="icon" onClick={() => add(p.id)} aria-label={`Ajouter un ${p.name}`}><Plus /></Button><Button variant="ghost" size="icon" className="ml-auto" onClick={() => add(p.id, -qty)} aria-label={`Supprimer ${p.name}`}><Trash2 /></Button></div></div>)}
           {!!lines.length && <><div className="flex justify-between mt-5"><span>Prix réel</span><s>{formatEuro(totalReal)}</s></div><div className="flex justify-between text-xl text-sale font-bold mt-2"><span>À PAYER</span><span>{formatEuro(sim(totalReal))}</span></div><div className="border-y border-dashed py-5 mt-5 space-y-3"><p className="font-sans font-bold">Ce panier représente, au prix réel :</p><p><span className="font-bold">Vous</span> · {formatDuration(userDays)} de revenus</p><p><span className="font-bold">{bill?.name}</span> · {formatDuration(billDays)} de revenus</p></div><p className="text-[11px] text-muted-foreground mt-3">Base {WORKING_DAYS} jours/an, 7 h/jour. Jours équivalents de revenus, pas de travail effectif. Simulation de revenus bruts.</p><Button onClick={share} disabled={sharing} className="w-full mt-5 font-sans"><Download />{sharing ? "Création de l'image…" : "Partager mon ticket"}</Button>{shareError && <p role="alert" className="text-destructive mt-2">{shareError}</p>}</>}
